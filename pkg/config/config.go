@@ -15,7 +15,7 @@ type Config struct {
 var AppConfig Config
 
 func LoadConfig(path string) error {
-	viper.SetConfigName("app") // app.env
+	viper.SetConfigName(".env") // 🔁 now uses .env
 	viper.SetConfigType("env")
 	viper.AddConfigPath(path) // look for config in the path
 	viper.AutomaticEnv()      // override with ENV vars

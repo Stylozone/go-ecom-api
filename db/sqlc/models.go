@@ -8,10 +8,19 @@ import (
 	"database/sql"
 )
 
+type Product struct {
+	ID          int32          `json:"id"`
+	Name        string         `json:"name"`
+	Description sql.NullString `json:"description"`
+	Price       int32          `json:"price"`
+	Quantity    int32          `json:"quantity"`
+	CreatedAt   sql.NullTime   `json:"created_at"`
+}
+
 type User struct {
-	ID           int32
-	Email        string
-	PasswordHash string
-	Role         sql.NullString
-	CreatedAt    sql.NullTime
+	ID           int32          `json:"id"`
+	Email        string         `json:"email"`
+	PasswordHash string         `json:"password_hash"`
+	Role         sql.NullString `json:"role"`
+	CreatedAt    sql.NullTime   `json:"created_at"`
 }

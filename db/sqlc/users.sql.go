@@ -16,8 +16,8 @@ RETURNING id, email, password_hash, role, created_at
 `
 
 type CreateUserParams struct {
-	Email        string
-	PasswordHash string
+	Email        string `json:"email"`
+	PasswordHash string `json:"password_hash"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
