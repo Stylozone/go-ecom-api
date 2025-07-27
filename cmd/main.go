@@ -50,6 +50,10 @@ func main() {
 	productHandler := api.NewProductHandler(store)
 	productHandler.RegisterRoutes(r)
 
+	// Order routes
+	orderHandler := api.NewOrderHandler(store)
+	orderHandler.RegisterRoutes(r)
+
 	log.Printf("Server running at http://localhost:%s\n", config.AppConfig.Port)
 	err = r.Run(":" + config.AppConfig.Port)
 	if err != nil {
