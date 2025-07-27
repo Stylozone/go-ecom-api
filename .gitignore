@@ -15,15 +15,23 @@ vendor/
 go.work
 go.work.sum
 
-# SQLC generated output (if you don't commit it)
+# SQLC generated output
+db/sqlc/
 sqlc-gen/
 generated/
+
+# Goose version tracking file
+goose-dbversion
 
 # Build or output directories
 /build/
 /dist/
 
-# IDE/editor-specific files
+# Logs and temp files
+*.log
+*.tmp
+
+# Editor and IDE files
 .vscode/
 .idea/
 *.iml
@@ -31,22 +39,13 @@ generated/
 *.swo
 *.bak
 
-# Logs and temp files
-*.log
-*.tmp
+# Environment files (DO NOT COMMIT real secrets)
+.env
+.env.*
+.envrc
 
 # OS-specific files
 .DS_Store
 Thumbs.db
 ehthumbs.db
 Desktop.ini
-
-# Docker files and volumes (optional)
-**/.env
-.env.*
-docker-compose.override.yml
-
-# PostgreSQL artifacts (if dumped locally)
-*.sql
-*.dump
-*.backup
