@@ -1,0 +1,52 @@
+# Go binaries and build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go coverage files
+*.coverprofile
+
+# Go modules & workspace
+vendor/
+go.work
+go.work.sum
+
+# SQLC generated output (if you don't commit it)
+sqlc-gen/
+generated/
+
+# Build or output directories
+/build/
+/dist/
+
+# IDE/editor-specific files
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+*.bak
+
+# Logs and temp files
+*.log
+*.tmp
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Docker files and volumes (optional)
+**/.env
+.env.*
+docker-compose.override.yml
+
+# PostgreSQL artifacts (if dumped locally)
+*.sql
+*.dump
+*.backup
