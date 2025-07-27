@@ -46,6 +46,10 @@ func main() {
 		})
 	})
 
+	// Auth routes
+	authHandler := api.NewAuthHandler(store, config.AppConfig.JWTSecret)
+	authHandler.RegisterRoutes(r)
+
 	// Product routes
 	productHandler := api.NewProductHandler(store)
 	productHandler.RegisterRoutes(r)
