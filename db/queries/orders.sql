@@ -14,3 +14,8 @@ FROM orders o
 JOIN order_items oi ON o.id = oi.order_id
 WHERE o.user_id = $1
 ORDER BY o.created_at DESC;
+
+-- name: UpdateOrderStatus :exec
+UPDATE orders
+SET status = $2
+WHERE id = $1;

@@ -28,6 +28,7 @@ func (h *OrderHandler) RegisterRoutes(r *gin.Engine, auth gin.HandlerFunc, admin
 	protectedAdmin := r.Group("/orders")
 	protectedAdmin.Use(auth, admin)
 	protectedAdmin.GET("/user/:id", h.GetOrdersByUser)
+	protectedAdmin.PUT("/:id", h.UpdateOrder)
 	// protectedAdmin.GET("/", h.ListAllOrders)
 }
 
@@ -120,4 +121,31 @@ func (h *OrderHandler) GetMyOrders(c *gin.Context) {
 
 	groupedOrders := utils.GroupOrderItems(rawOrders)
 	c.JSON(http.StatusOK, groupedOrders)
+}
+
+func (h *OrderHandler) UpdateOrder(c *gin.Context) {
+	orderID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid order id"})
+		return
+	}
+
+	var req struct {
+		Status string `json:"status" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = h.Store.UpdateOrderStatus(c, db.UpdateOrderStatusParams{
+		ID:     int32(orderID),
+		Status: req.Status,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update status"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "order status updated"})
 }
