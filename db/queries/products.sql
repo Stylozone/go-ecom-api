@@ -20,3 +20,6 @@ WHERE id = $1;
 -- name: DeleteProduct :exec
 DELETE FROM products
 WHERE id = $1;
+
+-- name: CountProducts :one
+SELECT COUNT(*) FROM products;

@@ -7,9 +7,10 @@ import (
 )
 
 type Config struct {
-	DBSource  string `mapstructure:"DB_SOURCE"`
-	JWTSecret string `mapstructure:"JWT_SECRET"`
-	Port      string `mapstructure:"PORT"`
+	DBSource    string `mapstructure:"DB_SOURCE"`
+	JWTSecret   string `mapstructure:"JWT_SECRET"`
+	Port        string `mapstructure:"PORT"`
+	FrontendURL string `mapstructure:"FRONTEND_URL"`
 }
 
 var AppConfig Config

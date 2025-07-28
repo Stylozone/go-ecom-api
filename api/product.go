@@ -66,7 +66,11 @@ func (h *ProductHandler) ListProducts(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, products)
+	total, _ := h.Store.CountProducts(c)
+	c.JSON(http.StatusOK, gin.H{
+		"items": products,
+		"total": total,
+	})
 }
 
 func (h *ProductHandler) GetProduct(c *gin.Context) {
