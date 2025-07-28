@@ -18,11 +18,16 @@ func NewProductHandler(store db.Querier) *ProductHandler {
 	return &ProductHandler{Store: store}
 }
 
-func (h *ProductHandler) RegisterRoutes(r *gin.Engine) {
-	group := r.Group("/products")
-	group.POST("/", h.CreateProduct)
-	group.GET("/", h.ListProducts)
-	group.GET("/:id", h.GetProduct)
+func (h *ProductHandler) RegisterRoutes(r *gin.Engine, auth gin.HandlerFunc, admin gin.HandlerFunc) {
+	public := r.Group("/products")
+	public.GET("/", h.ListProducts)
+	public.GET("/:id", h.GetProduct)
+
+	protected := r.Group("/products")
+	protected.Use(auth, admin)
+	protected.POST("/", h.CreateProduct)
+	// protected.PUT("/:id", h.UpdateProduct)
+	// protected.DELETE("/:id", h.DeleteProduct)
 }
 
 func (h *ProductHandler) CreateProduct(c *gin.Context) {

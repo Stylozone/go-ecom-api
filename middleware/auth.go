@@ -8,6 +8,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// AuthMiddleware verifies JWT and extracts user_id and role into context
 func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
@@ -20,7 +21,6 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
 
 		token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-			// Ensure token method is HMAC
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, jwt.ErrSignatureInvalid
 			}
@@ -28,27 +28,45 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 		})
 
 		if err != nil || !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
 			c.Abort()
 			return
 		}
 
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid claims"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to parse token claims"})
 			c.Abort()
 			return
 		}
 
-		// Get user ID and role from claims
-		userID, ok := claims["user_id"].(float64)
-		if !ok {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user_id"})
+		userIDFloat, idOK := claims["user_id"].(float64)
+		roleStr, roleOK := claims["role"].(string)
+
+		if !idOK || !roleOK {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "missing or invalid user_id or role in token"})
 			c.Abort()
 			return
 		}
 
-		c.Set("user_id", int32(userID)) // You can also set role here if needed
+		c.Set("user_id", int32(userIDFloat))
+		c.Set("role", roleStr)
+		c.Next()
+	}
+}
+
+// AdminOnly middleware restricts access to users with role "admin"
+func AdminOnly() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		roleVal, exists := c.Get("role")
+		role, ok := roleVal.(string)
+
+		if !exists || !ok || role != "admin" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "admin access only"})
+			c.Abort()
+			return
+		}
+
 		c.Next()
 	}
 }

@@ -17,9 +17,16 @@ func NewOrderHandler(store db.Querier) *OrderHandler {
 	return &OrderHandler{Store: store}
 }
 
-func (h *OrderHandler) RegisterRoutes(group *gin.RouterGroup) {
-	group.POST("/", h.CreateOrder)
-	group.GET("/user/:id", h.GetOrdersByUser)
+func (h *OrderHandler) RegisterRoutes(r *gin.Engine, auth gin.HandlerFunc) {
+	protected := r.Group("/orders")
+	protected.Use(auth)
+
+	protected.POST("/", h.CreateOrder)
+	protected.GET("/user/:id", h.GetOrdersByUser)
+
+	// protectedAdmin := r.Group("/orders")
+	// protectedAdmin.Use(auth, admin)
+	// protectedAdmin.GET("/", h.ListAllOrders)
 }
 
 func (h *OrderHandler) CreateOrder(c *gin.Context) {

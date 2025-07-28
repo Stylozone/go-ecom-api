@@ -4,10 +4,9 @@ import (
 	"database/sql"
 	"log"
 
-	"github.com/Stylozone/go-ecom-api/api"
 	"github.com/Stylozone/go-ecom-api/db/sqlc"
-	"github.com/Stylozone/go-ecom-api/middleware"
 	"github.com/Stylozone/go-ecom-api/pkg/config"
+	"github.com/Stylozone/go-ecom-api/router"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
@@ -15,18 +14,15 @@ import (
 )
 
 func main() {
-	// Load config from app.env
 	if err := config.LoadConfig("."); err != nil {
 		log.Fatalf("cannot load config: %v", err)
 	}
 
-	// Connect to DB
 	dbConn, err := sql.Open("postgres", config.AppConfig.DBSource)
 	if err != nil {
 		log.Fatalf("cannot connect to database: %v", err)
 	}
 
-	// ✅ Run Goose migrations here
 	if err := goose.Up(dbConn, "db/migrations"); err != nil {
 		log.Fatalf("failed to run migrations: %v", err)
 	}
@@ -35,39 +31,15 @@ func main() {
 		log.Fatalf("database not reachable: %v", err)
 	}
 
-	store := sqlc.New(dbConn) // *Queries implements Querier
+	store := sqlc.New(dbConn)
 
 	r := gin.Default()
 
-	// Apply middlewares
-	authMiddleware := middleware.AuthMiddleware(config.AppConfig.JWTSecret)
-
-	// Health route
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status": "ok",
-			"env":    config.AppConfig.Port,
-		})
-	})
-
-	// Auth routes
-	authHandler := api.NewAuthHandler(store, config.AppConfig.JWTSecret)
-	authHandler.RegisterRoutes(r)
-
-	// Product routes
-	productHandler := api.NewProductHandler(store)
-	productHandler.RegisterRoutes(r)
-
-	// Order routes
-	orderHandler := api.NewOrderHandler(store)
-	orderGroup := r.Group("/orders")
-	orderGroup.Use(authMiddleware)
-	orderHandler.RegisterRoutes(orderGroup)
+	// Route registration
+	router.RegisterRoutes(r, store, config.AppConfig)
 
 	log.Printf("Server running at http://localhost:%s\n", config.AppConfig.Port)
-	err = r.Run(":" + config.AppConfig.Port)
-	if err != nil {
+	if err := r.Run(":" + config.AppConfig.Port); err != nil {
 		log.Fatal("server failed to start:", err)
 	}
-
 }
