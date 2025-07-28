@@ -55,18 +55,33 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 	}
 }
 
-// AdminOnly middleware restricts access to users with role "admin"
-func AdminOnly() gin.HandlerFunc {
+func RequireRoles(allowedRoles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		roleVal, exists := c.Get("role")
 		role, ok := roleVal.(string)
 
-		if !exists || !ok || role != "admin" {
-			c.JSON(http.StatusForbidden, gin.H{"error": "admin access only"})
+		if !exists || !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "user role not found"})
 			c.Abort()
 			return
 		}
 
-		c.Next()
+		for _, allowed := range allowedRoles {
+			if role == allowed {
+				c.Next()
+				return
+			}
+		}
+
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		c.Abort()
 	}
+}
+
+func UserOnly() gin.HandlerFunc {
+	return RequireRoles("user")
+}
+
+func AdminOnly() gin.HandlerFunc {
+	return RequireRoles("admin")
 }
