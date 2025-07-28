@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	db "github.com/Stylozone/go-ecom-api/db/sqlc"
+	"github.com/Stylozone/go-ecom-api/dto"
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,15 +25,8 @@ func (h *ProductHandler) RegisterRoutes(r *gin.Engine) {
 	group.GET("/:id", h.GetProduct)
 }
 
-type createProductRequest struct {
-	Name        string `json:"name" binding:"required"`
-	Description string `json:"description"`
-	Price       int32  `json:"price" binding:"required"`
-	Quantity    int32  `json:"quantity" binding:"required"`
-}
-
 func (h *ProductHandler) CreateProduct(c *gin.Context) {
-	var req createProductRequest
+	var req dto.CreateProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

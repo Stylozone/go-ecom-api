@@ -5,6 +5,7 @@ import (
 	"time"
 
 	db "github.com/Stylozone/go-ecom-api/db/sqlc"
+	"github.com/Stylozone/go-ecom-api/dto"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -30,13 +31,8 @@ func (h *AuthHandler) RegisterRoutes(r *gin.Engine) {
 	group.POST("/login", h.Login)
 }
 
-type registerRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=6"`
-}
-
 func (h *AuthHandler) Register(c *gin.Context) {
-	var req registerRequest
+	var req dto.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -59,13 +55,8 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	})
 }
 
-type loginRequest struct {
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
-}
-
 func (h *AuthHandler) Login(c *gin.Context) {
-	var req loginRequest
+	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

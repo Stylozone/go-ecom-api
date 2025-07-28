@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	db "github.com/Stylozone/go-ecom-api/db/sqlc"
+	"github.com/Stylozone/go-ecom-api/dto"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,18 +22,8 @@ func (h *OrderHandler) RegisterRoutes(group *gin.RouterGroup) {
 	group.GET("/user/:id", h.GetOrdersByUser)
 }
 
-type createOrderItem struct {
-	ProductID int32 `json:"product_id" binding:"required"`
-	Quantity  int32 `json:"quantity" binding:"required"`
-	Price     int32 `json:"price" binding:"required"`
-}
-
-type createOrderRequest struct {
-	Items []createOrderItem `json:"items" binding:"required,dive"`
-}
-
 func (h *OrderHandler) CreateOrder(c *gin.Context) {
-	var req createOrderRequest
+	var req dto.CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -45,8 +36,23 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	}
 
 	total := int32(0)
+	orderItems := make([]db.CreateOrderItemParams, 0, len(req.Items))
+
 	for _, item := range req.Items {
-		total += item.Price * item.Quantity
+		product, err := h.Store.GetProduct(c, item.ProductID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid product ID"})
+			return
+		}
+
+		subtotal := product.Price * item.Quantity
+		total += subtotal
+
+		orderItems = append(orderItems, db.CreateOrderItemParams{
+			ProductID: item.ProductID,
+			Quantity:  item.Quantity,
+			Price:     product.Price, // use DB price
+		})
 	}
 
 	order, err := h.Store.CreateOrder(c, db.CreateOrderParams{
@@ -58,13 +64,10 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	for _, item := range req.Items {
-		err := h.Store.CreateOrderItem(c, db.CreateOrderItemParams{
-			OrderID:   order.ID,
-			ProductID: item.ProductID,
-			Quantity:  item.Quantity,
-			Price:     item.Price,
-		})
+	// Add order_id to each item and insert
+	for _, item := range orderItems {
+		item.OrderID = order.ID
+		err := h.Store.CreateOrderItem(c, item)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -81,11 +84,38 @@ func (h *OrderHandler) GetOrdersByUser(c *gin.Context) {
 		return
 	}
 
-	orders, err := h.Store.GetOrdersByUser(c, int32(userID))
+	rawOrders, err := h.Store.GetOrdersByUser(c, int32(userID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, orders)
+	orderMap := make(map[int32]*dto.OrderResponse)
+
+	for _, row := range rawOrders {
+		order, exists := orderMap[row.OrderID]
+		if !exists {
+			order = &dto.OrderResponse{
+				OrderID:    row.OrderID,
+				TotalPrice: row.TotalPrice,
+				CreatedAt:  row.CreatedAt.Time.Format("2006-01-02T15:04:05Z07:00"),
+				Items:      []dto.OrderItemResponse{},
+			}
+			orderMap[row.OrderID] = order
+		}
+
+		order.Items = append(order.Items, dto.OrderItemResponse{
+			ProductID: row.ProductID,
+			Quantity:  row.Quantity,
+			Price:     row.Price,
+		})
+	}
+
+	// Flatten map to slice
+	result := make([]dto.OrderResponse, 0, len(orderMap))
+	for _, o := range orderMap {
+		result = append(result, *o)
+	}
+
+	c.JSON(http.StatusOK, result)
 }
