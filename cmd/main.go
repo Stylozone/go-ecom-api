@@ -2,8 +2,10 @@ package main
 
 import (
 	"database/sql"
+	"flag"
 	"log"
 
+	"github.com/Stylozone/go-ecom-api/db/seed"
 	"github.com/Stylozone/go-ecom-api/db/sqlc"
 	"github.com/Stylozone/go-ecom-api/pkg/config"
 	"github.com/Stylozone/go-ecom-api/router"
@@ -14,6 +16,10 @@ import (
 )
 
 func main() {
+	// Add a --seed flag
+	seedFlag := flag.Bool("seed", false, "Seed fake products into the database")
+	flag.Parse()
+
 	if err := config.LoadConfig("."); err != nil {
 		log.Fatalf("cannot load config: %v", err)
 	}
@@ -32,6 +38,11 @@ func main() {
 	}
 
 	store := sqlc.New(dbConn)
+
+	if *seedFlag {
+		seed.SeedProducts(store)
+		return
+	}
 
 	r := gin.Default()
 
