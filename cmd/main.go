@@ -6,6 +6,7 @@ import (
 
 	"github.com/Stylozone/go-ecom-api/api"
 	"github.com/Stylozone/go-ecom-api/db/sqlc"
+	"github.com/Stylozone/go-ecom-api/middleware"
 	"github.com/Stylozone/go-ecom-api/pkg/config"
 
 	"github.com/gin-gonic/gin"
@@ -38,6 +39,9 @@ func main() {
 
 	r := gin.Default()
 
+	// Apply middlewares
+	authMiddleware := middleware.AuthMiddleware(config.AppConfig.JWTSecret)
+
 	// Health route
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
@@ -56,7 +60,9 @@ func main() {
 
 	// Order routes
 	orderHandler := api.NewOrderHandler(store)
-	orderHandler.RegisterRoutes(r)
+	orderGroup := r.Group("/orders")
+	orderGroup.Use(authMiddleware)
+	orderHandler.RegisterRoutes(orderGroup)
 
 	log.Printf("Server running at http://localhost:%s\n", config.AppConfig.Port)
 	err = r.Run(":" + config.AppConfig.Port)

@@ -16,8 +16,7 @@ func NewOrderHandler(store db.Querier) *OrderHandler {
 	return &OrderHandler{Store: store}
 }
 
-func (h *OrderHandler) RegisterRoutes(r *gin.Engine) {
-	group := r.Group("/orders")
+func (h *OrderHandler) RegisterRoutes(group *gin.RouterGroup) {
 	group.POST("/", h.CreateOrder)
 	group.GET("/user/:id", h.GetOrdersByUser)
 }
@@ -29,8 +28,7 @@ type createOrderItem struct {
 }
 
 type createOrderRequest struct {
-	UserID int32             `json:"user_id" binding:"required"`
-	Items  []createOrderItem `json:"items" binding:"required,dive"`
+	Items []createOrderItem `json:"items" binding:"required,dive"`
 }
 
 func (h *OrderHandler) CreateOrder(c *gin.Context) {
@@ -40,13 +38,19 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 
+	userID, ok := c.Get("user_id")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id not found in token"})
+		return
+	}
+
 	total := int32(0)
 	for _, item := range req.Items {
 		total += item.Price * item.Quantity
 	}
 
 	order, err := h.Store.CreateOrder(c, db.CreateOrderParams{
-		UserID:     req.UserID,
+		UserID:     userID.(int32),
 		TotalPrice: total,
 	})
 	if err != nil {
