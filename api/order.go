@@ -28,7 +28,7 @@ func (h *OrderHandler) RegisterRoutes(r *gin.Engine, auth gin.HandlerFunc, admin
 	protectedAdmin := r.Group("/orders")
 	protectedAdmin.Use(auth, admin)
 	protectedAdmin.GET("/user/:id", h.GetOrdersByUser)
-	protectedAdmin.PUT("/:id", h.UpdateOrder)
+	protectedAdmin.PATCH("/:id", h.UpdateOrder)
 	// protectedAdmin.GET("/", h.ListAllOrders)
 }
 
