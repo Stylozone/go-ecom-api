@@ -6,6 +6,7 @@ import (
 
 	db "github.com/Stylozone/go-ecom-api/db/sqlc"
 	"github.com/Stylozone/go-ecom-api/dto"
+	"github.com/Stylozone/go-ecom-api/pkg/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,15 +18,16 @@ func NewOrderHandler(store db.Querier) *OrderHandler {
 	return &OrderHandler{Store: store}
 }
 
-func (h *OrderHandler) RegisterRoutes(r *gin.Engine, auth gin.HandlerFunc) {
+func (h *OrderHandler) RegisterRoutes(r *gin.Engine, auth gin.HandlerFunc, admin gin.HandlerFunc) {
 	protected := r.Group("/orders")
 	protected.Use(auth)
 
 	protected.POST("/", h.CreateOrder)
-	protected.GET("/user/:id", h.GetOrdersByUser)
+	protected.GET("/me", h.GetMyOrders)
 
-	// protectedAdmin := r.Group("/orders")
-	// protectedAdmin.Use(auth, admin)
+	protectedAdmin := r.Group("/orders")
+	protectedAdmin.Use(auth, admin)
+	protectedAdmin.GET("/user/:id", h.GetOrdersByUser)
 	// protectedAdmin.GET("/", h.ListAllOrders)
 }
 
@@ -97,32 +99,25 @@ func (h *OrderHandler) GetOrdersByUser(c *gin.Context) {
 		return
 	}
 
-	orderMap := make(map[int32]*dto.OrderResponse)
-
-	for _, row := range rawOrders {
-		order, exists := orderMap[row.OrderID]
-		if !exists {
-			order = &dto.OrderResponse{
-				OrderID:    row.OrderID,
-				TotalPrice: row.TotalPrice,
-				CreatedAt:  row.CreatedAt.Time.Format("2006-01-02T15:04:05Z07:00"),
-				Items:      []dto.OrderItemResponse{},
-			}
-			orderMap[row.OrderID] = order
-		}
-
-		order.Items = append(order.Items, dto.OrderItemResponse{
-			ProductID: row.ProductID,
-			Quantity:  row.Quantity,
-			Price:     row.Price,
-		})
-	}
-
-	// Flatten map to slice
-	result := make([]dto.OrderResponse, 0, len(orderMap))
-	for _, o := range orderMap {
-		result = append(result, *o)
-	}
-
+	result := utils.GroupOrderItems(rawOrders)
 	c.JSON(http.StatusOK, result)
+}
+
+func (h *OrderHandler) GetMyOrders(c *gin.Context) {
+	// Get user_id from JWT middleware context
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(int32)
+
+	rawOrders, err := h.Store.GetOrdersByUser(c, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "cannot get orders"})
+		return
+	}
+
+	groupedOrders := utils.GroupOrderItems(rawOrders)
+	c.JSON(http.StatusOK, groupedOrders)
 }

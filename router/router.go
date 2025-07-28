@@ -41,7 +41,7 @@ func RegisterRoutes(r *gin.Engine, store sqlc.Querier, cfg config.Config) {
 
 	// Orders
 	orderHandler := api.NewOrderHandler(store)
-	orderHandler.RegisterRoutes(r, authMiddleware)
+	orderHandler.RegisterRoutes(r, authMiddleware, adminOnly)
 
 	// Users
 	userHandler := api.NewUserHandler(store)
